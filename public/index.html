@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pounce</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body class="landing">
+    <main class="landing-shell">
+      <section class="brand-block">
+        <div class="logo-lockup">
+          <span class="logo-mark">P</span>
+          <div>
+            <h1>Pounce</h1>
+            <p>Fast real-time competitive solitaire for 2-4 players.</p>
+          </div>
+        </div>
+        <div class="table-preview" aria-hidden="true">
+          <span class="preview-card red">A♥</span>
+          <span class="preview-card black">K♠</span>
+          <span class="preview-card red">7♦</span>
+          <span class="preview-card black">Q♣</span>
+        </div>
+      </section>
+
+      <section class="lobby-panel" id="setupPanel">
+        <div class="tabs" role="tablist">
+          <button class="tab active" type="button" data-tab="create">Create Game</button>
+          <button class="tab" type="button" data-tab="join">Join Game</button>
+        </div>
+
+        <form class="form active" id="createForm">
+          <label>Pounce Name
+            <input id="createName" name="name" autocomplete="nickname" maxlength="24" placeholder="B-Bippy">
+          </label>
+          <div class="form-row">
+            <button class="secondary" type="button" id="randomCreate">Random Name</button>
+            <button class="primary" type="submit">Create Game</button>
+          </div>
+        </form>
+
+        <form class="form" id="joinForm">
+          <label>Pounce Name
+            <input id="joinName" name="name" autocomplete="nickname" maxlength="24" placeholder="Ace Bandit">
+          </label>
+          <label>Game Code
+            <input id="joinCode" name="code" maxlength="6" placeholder="X7KQ" class="code-input">
+          </label>
+          <div class="form-row">
+            <button class="secondary" type="button" id="randomJoin">Random Name</button>
+            <button class="primary" type="submit">Join Game</button>
+          </div>
+        </form>
+
+        <div class="lobby-room hidden" id="roomPanel">
+          <div class="room-code-row">
+            <div>
+              <span class="eyebrow">Room Code</span>
+              <strong id="roomCode">----</strong>
+            </div>
+            <button class="secondary" type="button" id="copyCode">Copy Code</button>
+          </div>
+          <div class="connection" id="connectionStatus">Connected</div>
+          <ul class="player-list" id="playerList"></ul>
+          <button class="primary full" type="button" id="startGame">Start Game</button>
+          <p class="hint" id="startHint">Minimum 2 players. Maximum 4 players.</p>
+        </div>
+      </section>
+
+      <div class="landing-actions">
+        <button class="text-button" type="button" id="howToPlay">How to Play</button>
+        <a class="text-button" href="/game.html">Open Game Screen</a>
+      </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/lobby.js"></script>
+  </body>
+</html>

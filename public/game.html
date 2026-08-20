@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pounce Game</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/game.css">
+  </head>
+  <body class="game-body">
+    <div class="game-shell">
+      <header class="game-topbar">
+        <div class="room-chip">Room <strong id="roomCode">----</strong></div>
+        <div class="round-chip">Round <strong id="roundNumber">1</strong></div>
+        <div class="opponents" id="opponents"></div>
+        <button class="icon-button" id="muteButton" type="button" title="Mute">♪</button>
+        <button class="icon-button" id="howToPlay" type="button" title="How to Play">?</button>
+      </header>
+
+      <main class="table">
+        <section class="center-zone">
+          <h2>Shared Center</h2>
+          <div class="foundation-grid" id="foundationGrid"></div>
+        </section>
+
+        <section class="player-zone">
+          <div class="zone-title">
+            <h2>Your Cards</h2>
+            <button class="pounce-button hidden" id="pounceButton" type="button">POUNCE!</button>
+          </div>
+          <div class="cards-layout">
+            <div class="pile-block">
+              <h3>Pounce</h3>
+              <div class="drop-target pounce-pile" id="pouncePile"></div>
+            </div>
+            <div class="tray-block">
+              <h3>Start Piles</h3>
+              <div class="tableau" id="tableau"></div>
+            </div>
+            <div class="pile-block">
+              <h3>Stock</h3>
+              <div class="stock-pile" id="stockPile"></div>
+            </div>
+            <div class="pile-block">
+              <h3>Waste</h3>
+              <div class="waste-pile" id="wastePile"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="overlay hidden" id="statusOverlay">
+      <div class="overlay-content" id="overlayContent"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/cards.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/game.js"></script>
+  </body>
+</html>
