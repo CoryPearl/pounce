@@ -104,7 +104,9 @@ test('round setup deals five start piles of 1 through 5 with only tops face up',
     assert.equal(column.at(-1).faceUp, true);
     column.slice(0, -1).forEach((entry) => assert.equal(entry.faceUp, false));
   });
-  assert.equal(p1.roundState.stock.length, 24);
+  assert.equal(p1.roundState.pouncePile.length, 7);
+  assert.equal(p1.roundState.initialPounceCount, 7);
+  assert.equal(p1.roundState.stock.length, 30);
 });
 
 test('Pounce card reveals and empty start piles accept Pounce cards', () => {

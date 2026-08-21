@@ -2,6 +2,7 @@ const { createId } = require('./utils');
 
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const PLAYER_COLORS = ['#3b82f6', '#f97316', '#22c55e', '#a855f7'];
+const DEFAULT_POUNCE_SIZE = 7;
 const RANK_LABELS = {
   1: 'A',
   11: 'J',
@@ -84,7 +85,7 @@ function cloneCardPublic(card) {
 
 function initializePlayerRound(player, options = {}) {
   const deck = options.deck ? options.deck.slice() : shuffleDeck(createDeck(player.id), options.random);
-  const pounceSize = Math.max(0, Math.min(options.pounceSize || 13, deck.length));
+  const pounceSize = Math.max(0, Math.min(options.pounceSize || DEFAULT_POUNCE_SIZE, deck.length));
   const pouncePile = deck.splice(0, pounceSize);
   const tableau = [[], [], [], [], []];
   for (let columnIndex = 0; columnIndex < 5; columnIndex += 1) {
@@ -97,6 +98,7 @@ function initializePlayerRound(player, options = {}) {
 
   player.roundState = {
     pouncePile,
+    initialPounceCount: pouncePile.length,
     tableau,
     stock: deck,
     waste: [],
@@ -434,7 +436,8 @@ function publicState(room) {
       ready: Boolean(player.ready),
       isHost: room.hostId === player.id,
       markerColor: player.markerColor,
-      pounceCount: player.roundState ? player.roundState.pouncePile.length : null
+      pounceCount: player.roundState ? player.roundState.pouncePile.length : null,
+      pounceTotal: player.roundState ? player.roundState.initialPounceCount : null
     })),
     foundations: foundationPublicState(room),
     lastRoundResults: room.lastRoundResults
@@ -449,6 +452,7 @@ function privateState(player) {
     token: player.reconnectToken,
     roundState: {
       pounceCount: state.pouncePile.length,
+      pounceTotal: state.initialPounceCount,
       pounceTop: cloneCardPublic(exposedPounceCard(player)),
       tableau: state.tableau.map((column) => column.map((entry) => {
         if (!isTableauFaceUp(entry)) return { faceUp: false };
@@ -465,6 +469,7 @@ function privateState(player) {
 module.exports = {
   SUITS,
   PLAYER_COLORS,
+  DEFAULT_POUNCE_SIZE,
   createDeck,
   shuffleDeck,
   initializePlayerRound,

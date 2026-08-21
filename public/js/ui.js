@@ -79,7 +79,7 @@
     modal('How to Play', `
       <ol class="rules-list">
         <li>Each player has their own deck.</li>
-        <li>Your Pounce Pile begins with 13 cards.</li>
+        <li>Your Pounce Pile begins with 7 cards.</li>
         <li>Try to empty your Pounce Pile before everyone else.</li>
         <li>Center piles begin with an Ace and build upward by suit.</li>
         <li>Your five start piles are dealt 1, 2, 3, 4, and 5 cards, with only the top card face up.</li>

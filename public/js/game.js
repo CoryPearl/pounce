@@ -63,11 +63,12 @@
     const players = publicState.players || [];
     els.opponents.innerHTML = players.map((player) => {
       const urgent = player.pounceCount !== null && player.pounceCount <= 1 ? 'urgent' : '';
+      const pounceText = player.pounceCount === null ? '-' : `${player.pounceCount}/${player.pounceTotal || 7}`;
       return `
         <div class="opponent ${urgent}" style="--owner-color:${player.markerColor}">
           <span class="player-dot"></span>
           <strong>${escapeHtml(player.name)}</strong>
-          <span>Pounce: ${player.pounceCount === null ? '-' : player.pounceCount}</span>
+          <span>Pounce: ${pounceText}</span>
           <span>Score: ${player.score}</span>
           ${player.connected ? '' : '<em>Disconnected</em>'}
         </div>
@@ -101,6 +102,19 @@
     return el.outerHTML;
   }
 
+  function stackGapFor(cardCount) {
+    if (cardCount <= 1) return 0;
+    const narrow = window.innerWidth <= 560;
+    const tablet = window.innerWidth <= 940;
+    const compactHeight = window.innerHeight <= 760;
+    const cardHeight = narrow ? 80 : tablet ? 88 : 108;
+    const targetHeight = narrow ? 168 : compactHeight ? 184 : 224;
+    const comfortableGap = narrow ? 13 : tablet ? 15 : 18;
+    const minimumGap = narrow ? 7 : 9;
+    const fittedGap = Math.floor((targetHeight - cardHeight) / (cardCount - 1));
+    return Math.max(minimumGap, Math.min(comfortableGap, fittedGap));
+  }
+
   function renderPrivate() {
     if (!privateState || !privateState.roundState) return;
     const state = privateState.roundState;
@@ -119,6 +133,7 @@
       columnEl.className = 'tableau-column drop-target';
       columnEl.dataset.dropType = 'tableau';
       columnEl.dataset.columnIndex = columnIndex;
+      columnEl.style.setProperty('--stack-gap', `${stackGapFor(column.length)}px`);
       if (column.length === 0) columnEl.innerHTML = '<div class="empty-slot">Empty</div>';
       column.forEach((entry, cardIndex) => {
         let cardEl;
@@ -134,7 +149,7 @@
             ownerColor: myMarker(card)
           });
         }
-        cardEl.style.setProperty('--stack-offset', `${cardIndex * 30}px`);
+        cardEl.style.setProperty('--stack-index', cardIndex);
         columnEl.appendChild(cardEl);
       });
       els.tableau.appendChild(columnEl);
