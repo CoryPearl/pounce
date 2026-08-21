@@ -119,7 +119,7 @@
       columnEl.className = 'tableau-column drop-target';
       columnEl.dataset.dropType = 'tableau';
       columnEl.dataset.columnIndex = columnIndex;
-      if (column.length === 0) columnEl.innerHTML = '<div class="empty-slot">Auto-fill</div>';
+      if (column.length === 0) columnEl.innerHTML = '<div class="empty-slot">Empty</div>';
       column.forEach((entry, cardIndex) => {
         let cardEl;
         if (!entry.faceUp) {

@@ -124,6 +124,11 @@ function canPlayTableau(card, destinationCard) {
   return card.rank === destinationCard.rank - 1 && card.color !== destinationCard.color;
 }
 
+function canPlayEmptyTableau(locator) {
+  if (!locator || !locator.card) return false;
+  return locator.sourceType === 'pounce' || locator.card.rank === 13;
+}
+
 function validateTableauStack(cards) {
   if (!Array.isArray(cards) || cards.length === 0) return false;
   if (cards.some((entry) => !isTableauFaceUp(entry))) return false;
@@ -242,7 +247,6 @@ function playToFoundation(room, playerId, action) {
   }
   foundation.cards.push(locator.card);
   player.roundState.centerPlayed += 1;
-  refillEmptyTableau(player);
   return { ok: true, card: locator.card, foundationId: foundation.id, source: action.source };
 }
 
@@ -254,7 +258,6 @@ function playToTableau(room, playerId, action) {
   const destinationColumn = Number(action.destinationColumnIndex);
   const tableau = player.roundState.tableau[destinationColumn];
   if (!Array.isArray(tableau)) return { ok: false, reason: 'Invalid start-pile destination.' };
-  if (tableau.length === 0) return { ok: false, reason: 'Empty start piles fill only from the Pounce pile.' };
 
   const locator = locateMovableCard(player, action.source);
   if (!locator.ok) return locator;
@@ -262,13 +265,21 @@ function playToTableau(room, playerId, action) {
   if (!requested.ok) return requested;
   if (locator.cards.length !== 1) return { ok: false, reason: 'Use start-pile stack moves for multiple cards.' };
 
+  if (tableau.length === 0) {
+    if (!canPlayEmptyTableau(locator)) {
+      return { ok: false, reason: 'An empty start pile needs a Pounce card or a King.' };
+    }
+    removeLocatedCards(player, locator);
+    tableau.push(createTableauEntry(locator.card, true));
+    return { ok: true, card: locator.card, destinationColumnIndex: destinationColumn, source: action.source };
+  }
+
   const destination = tableauCard(tableau[tableau.length - 1]);
   if (!canPlayTableau(locator.card, destination)) {
     return { ok: false, reason: 'That card cannot be played on the selected start pile.' };
   }
   removeLocatedCards(player, locator);
   tableau.push(createTableauEntry(locator.card, true));
-  refillEmptyTableau(player);
   return { ok: true, card: locator.card, destinationColumnIndex: destinationColumn, source: action.source };
 }
 
@@ -287,7 +298,14 @@ function moveTableauStack(room, playerId, action) {
   if (locator.columnIndex === destinationColumn) return { ok: false, reason: 'Choose a different start pile.' };
   const requested = assertRequestedCard(locator, action.cardId);
   if (!requested.ok) return requested;
-  if (tableau.length === 0) return { ok: false, reason: 'Empty start piles fill only from the Pounce pile.' };
+  if (tableau.length === 0) {
+    if (!canPlayEmptyTableau(locator)) {
+      return { ok: false, reason: 'A stack moved to an empty start pile must start with a King.' };
+    }
+    removeLocatedCards(player, locator);
+    tableau.push(...locator.entries);
+    return { ok: true, cards: locator.cards, destinationColumnIndex: destinationColumn, source: action.source };
+  }
   const destination = tableauCard(tableau[tableau.length - 1]);
   if (!canPlayTableau(locator.card, destination)) {
     return { ok: false, reason: 'That stack cannot be played on the selected start pile.' };
@@ -295,7 +313,6 @@ function moveTableauStack(room, playerId, action) {
 
   removeLocatedCards(player, locator);
   tableau.push(...locator.entries);
-  refillEmptyTableau(player);
   return { ok: true, cards: locator.cards, destinationColumnIndex: destinationColumn, source: action.source };
 }
 
@@ -338,7 +355,7 @@ function calculateRoundScore(room) {
   return room.players.map((player) => {
     const center = centerCounts.get(player.id) || 0;
     const pounceLeft = player.roundState ? player.roundState.pouncePile.length : 0;
-    const roundScore = center - pounceLeft * 2;
+    const roundScore = center - pounceLeft;
     player.score += roundScore;
     return {
       playerId: player.id,
@@ -454,6 +471,7 @@ module.exports = {
   isOppositeColor,
   canPlayFoundation,
   canPlayTableau,
+  canPlayEmptyTableau,
   validateTableauStack,
   playToFoundation,
   playToTableau,

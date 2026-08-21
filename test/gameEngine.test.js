@@ -107,7 +107,7 @@ test('round setup deals five start piles of 1 through 5 with only tops face up',
   assert.equal(p1.roundState.stock.length, 24);
 });
 
-test('Pounce card reveals and empty tray fills from Pounce', () => {
+test('Pounce card reveals and empty start piles accept Pounce cards', () => {
   const p1 = player('p1');
   const top = card('p1', 'hearts', 8);
   const next = card('p1', 'clubs', 12);
@@ -127,17 +127,51 @@ test('Pounce card reveals and empty tray fills from Pounce', () => {
   assert.equal(played.ok, true);
   assert.equal(engine.revealPounce(p1).id, next.id);
 
-  p1.roundState.tableau[0] = [up(card('p1', 'hearts', 6))];
-  p1.roundState.tableau[1] = [up(card('p1', 'spades', 5))];
-  p1.roundState.pouncePile = [card('p1', 'diamonds', 13)];
-  const moved = engine.moveTableauStack(r, 'p1', {
-    cardId: p1.roundState.tableau[1][0].card.id,
-    source: { type: 'tableau', columnIndex: 1, cardIndex: 0 },
-    destinationColumnIndex: 0
+  p1.roundState.tableau[1] = [];
+  p1.roundState.pouncePile = [card('p1', 'diamonds', 4)];
+  const moved = engine.playToTableau(r, 'p1', {
+    cardId: p1.roundState.pouncePile[0].id,
+    source: { type: 'pounce' },
+    destinationColumnIndex: 1
   });
   assert.equal(moved.ok, true);
-  assert.equal(p1.roundState.tableau[1][0].card.rank, 13);
+  assert.equal(p1.roundState.tableau[1][0].card.rank, 4);
   assert.equal(p1.roundState.pouncePile.length, 0);
+});
+
+test('empty start piles accept Kings and King-led stacks only', () => {
+  const p1 = player('p1');
+  const king = up(card('p1', 'spades', 13));
+  const queen = up(card('p1', 'hearts', 12));
+  const jack = up(card('p1', 'clubs', 11));
+  p1.roundState.tableau[0] = [king, queen, jack];
+  p1.roundState.tableau[1] = [];
+  p1.roundState.tableau[2] = [up(card('p1', 'diamonds', 8))];
+  p1.roundState.tableau[3] = [];
+  p1.roundState.waste = [card('p1', 'clubs', 5)];
+  const r = room([p1, player('p2')]);
+
+  const badWaste = engine.playToTableau(r, 'p1', {
+    cardId: p1.roundState.waste[0].id,
+    source: { type: 'waste' },
+    destinationColumnIndex: 1
+  });
+  assert.equal(badWaste.ok, false);
+
+  const badStack = engine.moveTableauStack(r, 'p1', {
+    cardId: queen.card.id,
+    source: { type: 'tableau', columnIndex: 0, cardIndex: 1 },
+    destinationColumnIndex: 1
+  });
+  assert.equal(badStack.ok, false);
+
+  const goodStack = engine.moveTableauStack(r, 'p1', {
+    cardId: king.card.id,
+    source: { type: 'tableau', columnIndex: 0, cardIndex: 0 },
+    destinationColumnIndex: 1
+  });
+  assert.equal(goodStack.ok, true);
+  assert.deepEqual(p1.roundState.tableau[1].map((entry) => entry.card.rank), [13, 12, 11]);
 });
 
 test('removing a start-pile top card flips the next card face up', () => {
@@ -191,7 +225,7 @@ test('scoring counts center ownership and Pounce penalties', () => {
 
   const results = engine.calculateRoundScore(r);
   assert.equal(results.find((row) => row.playerId === 'p1').roundScore, 2);
-  assert.equal(results.find((row) => row.playerId === 'p2').roundScore, -3);
+  assert.equal(results.find((row) => row.playerId === 'p2').roundScore, -1);
 });
 
 test('Pounce call requires zero Pounce cards and moves fail after call', () => {

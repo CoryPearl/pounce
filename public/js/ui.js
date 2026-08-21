@@ -84,11 +84,12 @@
         <li>Center piles begin with an Ace and build upward by suit.</li>
         <li>Your five start piles are dealt 1, 2, 3, 4, and 5 cards, with only the top card face up.</li>
         <li>Start piles build downward while alternating red and black.</li>
+        <li>An empty start pile can begin with your exposed Pounce card or with a King.</li>
         <li>Use cards from your Pounce Pile, start piles, and stock.</li>
         <li>Everyone plays at the same time.</li>
         <li>When your Pounce Pile reaches zero, call POUNCE.</li>
         <li>Every center card you own scores +1.</li>
-        <li>Every card left in your Pounce Pile scores -2.</li>
+        <li>Every card left in your Pounce Pile scores -1.</li>
         <li>First player to reach 100 points wins.</li>
       </ol>
       <div class="card-examples">

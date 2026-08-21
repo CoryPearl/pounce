@@ -8,11 +8,11 @@ No accounts are required. Players choose temporary Pounce Names and share a shor
 
 ## Rules
 
-Each player has a private 52-card deck. At the beginning of a round, every player receives a 13-card Pounce pile, five start piles, and a stock pile. The start piles are dealt with 1, 2, 3, 4, and 5 cards; only the top card of each start pile is face up. The Pounce pile has one exposed top card. Empty start piles are automatically filled from the exposed Pounce card when possible.
+Each player has a private 52-card deck. At the beginning of a round, every player receives a 13-card Pounce pile, five start piles, and a stock pile. The start piles are dealt with 1, 2, 3, 4, and 5 cards; only the top card of each start pile is face up. The Pounce pile has one exposed top card. Empty start piles can be started with the exposed Pounce card or with a King.
 
 Center piles are shared by all players. A center pile starts with an Ace and builds upward by suit through King. Start piles build downward while alternating red and black. Stock uses draw-three rules, and only the exposed waste card can be played.
 
-When a player empties their Pounce pile, they can call POUNCE. The round stops immediately. Each center card owned by a player is worth +1. Each card remaining in that player's Pounce pile is worth -2. Rounds continue until at least one player reaches 100 points; the highest total score wins.
+When a player empties their Pounce pile, they can call POUNCE. The round stops immediately. Each center card owned by a player is worth +1. Each card remaining in that player's Pounce pile is worth -1. Rounds continue until at least one player reaches 100 points; the highest total score wins.
 
 ## Technology
 
