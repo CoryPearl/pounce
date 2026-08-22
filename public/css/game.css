@@ -348,6 +348,45 @@ body.game-body {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
 }
 
+.foundation-pile .card .corner {
+  font-size: 9px;
+}
+
+.foundation-pile .card .top {
+  left: 4px;
+  top: 4px;
+}
+
+.foundation-pile .card .bottom {
+  right: 4px;
+  bottom: 4px;
+}
+
+.foundation-pile .card .pip {
+  font-size: 21px;
+}
+
+.foundation-pile .card .owner-dot {
+  width: 7px;
+  height: 7px;
+  right: 4px;
+  top: 4px;
+  border-width: 1px;
+}
+
+.foundation-pile .card::before {
+  height: 3px;
+}
+
+.foundation-pile.foundation-pop,
+.foundation-pile.foundation-pop-remote {
+  animation: foundationPop 420ms ease both;
+}
+
+.foundation-pile.foundation-pop-remote {
+  box-shadow: 0 0 0 2px rgba(246, 211, 74, 0.95), 0 0 24px rgba(246, 211, 74, 0.44);
+}
+
 .depth {
   position: absolute;
   left: 4px;
@@ -365,6 +404,7 @@ body.game-body {
 }
 
 .player-zone {
+  position: relative;
   padding: 16px 20px 22px;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(16, 21, 18, 0.72);
@@ -379,6 +419,10 @@ body.game-body {
 }
 
 .pounce-button {
+  position: absolute;
+  right: 20px;
+  top: -68px;
+  z-index: 42;
   min-height: 54px;
   padding: 0 26px;
   border: 0;
@@ -676,6 +720,12 @@ body.game-body {
   0% { transform: scale(0.4); opacity: 0; }
   70% { transform: scale(1.12); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes foundationPop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); border-color: rgba(246, 211, 74, 0.95); }
+  100% { transform: scale(1); }
 }
 
 @keyframes shake {

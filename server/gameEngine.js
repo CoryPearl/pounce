@@ -297,7 +297,7 @@ function moveTableauStack(room, playerId, action) {
   const locator = locateMovableCard(player, action.source);
   if (!locator.ok) return locator;
   if (locator.sourceType !== 'tableau') return { ok: false, reason: 'Only start-pile stacks can move as groups.' };
-  if (locator.columnIndex === destinationColumn) return { ok: false, reason: 'Choose a different start pile.' };
+  if (locator.columnIndex === destinationColumn) return { ok: false, reason: 'That card is already in that start pile.' };
   const requested = assertRequestedCard(locator, action.cardId);
   if (!requested.ok) return requested;
   if (tableau.length === 0) {
@@ -329,7 +329,7 @@ function drawStock(room, playerId) {
   }
 
   if (state.stock.length === 0) {
-    state.stock = state.waste.reverse();
+    state.stock = state.waste.slice();
     state.waste = [];
     state.stockPosition = 0;
   }
@@ -400,6 +400,8 @@ function startRound(room, options = {}) {
   room.lastRoundResults = null;
   room.roundEndReason = null;
   room.endRoundVotes = new Set();
+  room.stockDrawCount = 3;
+  room.stockDrawVotes = new Set();
   room.winner = null;
   room.players.forEach((player, index) => {
     player.ready = false;

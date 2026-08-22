@@ -165,7 +165,12 @@ function registerSocketHandlers(io, roomManager) {
           emitReject(socket, result);
           return;
         }
-        io.to(room.code).emit('card:moved', { kind: 'foundation', playerId: player.id, cardId: result.card.id });
+        io.to(room.code).emit('card:moved', {
+          kind: 'foundation',
+          playerId: player.id,
+          cardId: result.card.id,
+          foundationId: result.foundationId
+        });
         emitStates(room);
       });
     });

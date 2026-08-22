@@ -109,6 +109,19 @@ test('round setup deals five start piles of 1 through 5 with only tops face up',
   assert.equal(p1.roundState.stock.length, 30);
 });
 
+test('starting a new round resets stock draw votes back to draw three', () => {
+  const p1 = player('p1');
+  const p2 = player('p2');
+  const r = room([p1, p2]);
+  r.stockDrawCount = 1;
+  r.stockDrawVotes = new Set(['p1', 'p2']);
+
+  engine.startRound(r);
+
+  assert.equal(r.stockDrawCount, 3);
+  assert.equal(r.stockDrawVotes.size, 0);
+});
+
 test('Pounce card reveals and empty start piles accept Pounce cards', () => {
   const p1 = player('p1');
   const top = card('p1', 'hearts', 8);
@@ -210,8 +223,8 @@ test('stock advances and cycles deterministically', () => {
   assert.equal(p1.roundState.waste.at(-1).rank, 4);
 
   assert.equal(engine.drawStock(r, 'p1').ok, true);
-  assert.deepEqual(p1.roundState.waste.map((c) => c.rank), [4, 3, 2]);
-  assert.deepEqual(p1.roundState.stock.map((c) => c.rank), [1]);
+  assert.deepEqual(p1.roundState.waste.map((c) => c.rank), [1, 2, 3]);
+  assert.deepEqual(p1.roundState.stock.map((c) => c.rank), [4]);
 });
 
 test('stock can draw one card when room draw mode changes', () => {

@@ -29,6 +29,7 @@
   let selected = null;
   let drag = null;
   let latestMyPlayerId = myPlayerId;
+  let pendingFoundationPulse = null;
 
   function myMarker(card) {
     const owner = publicState && publicState.players.find((player) => player.id === card.ownerPlayerId);
@@ -61,6 +62,8 @@
     renderStockVote();
     renderPhase();
     renderDebug();
+    syncSelectionVisual();
+    flushFoundationPulse();
   }
 
   function renderOpponents() {
@@ -214,6 +217,28 @@
         </div>
       `;
     }).join('');
+  }
+
+  function handleCardMoved(move) {
+    PounceUI.sounds.place();
+    if (move.kind !== 'foundation') return;
+    pendingFoundationPulse = move;
+    if (move.playerId !== latestMyPlayerId && navigator.vibrate) {
+      navigator.vibrate(45);
+    }
+    flushFoundationPulse();
+  }
+
+  function flushFoundationPulse() {
+    if (!pendingFoundationPulse || pendingFoundationPulse.kind !== 'foundation') return;
+    const target = document.querySelector(`[data-foundation-id="${pendingFoundationPulse.foundationId}"]`);
+    if (!target) return;
+    target.classList.remove('foundation-pop', 'foundation-pop-remote');
+    void target.offsetWidth;
+    target.classList.add(pendingFoundationPulse.playerId === latestMyPlayerId ? 'foundation-pop' : 'foundation-pop-remote');
+    const animated = target;
+    setTimeout(() => animated.classList.remove('foundation-pop', 'foundation-pop-remote'), 520);
+    pendingFoundationPulse = null;
   }
 
   function cardHtml(card) {
@@ -425,14 +450,30 @@
     if (!selected) return;
     event.stopPropagation();
     const target = event.target.closest('.drop-target, .foundation-pile, .empty-foundation') || event.currentTarget;
-    sendMove(selected, target);
-    clearSelection();
+    if (sendMove(selected, target)) clearSelection();
   }
 
   function clearSelection(clearPayload = true) {
     if (clearPayload) selected = null;
     document.querySelectorAll('.selected').forEach((el) => el.classList.remove('selected'));
     highlightTargets(false);
+  }
+
+  function syncSelectionVisual() {
+    document.querySelectorAll('.selected').forEach((el) => el.classList.remove('selected'));
+    if (!selected) {
+      highlightTargets(false);
+      return;
+    }
+    const selectedCard = Array.from(document.querySelectorAll('.card:not(.card-back)'))
+      .find((card) => card.dataset.cardId === selected.cardId && isPlayableCardEl(card));
+    if (!selectedCard) {
+      selected = null;
+      highlightTargets(false);
+      return;
+    }
+    selectedCard.classList.add('selected');
+    highlightTargets(true);
   }
 
   function onPointerDown(event) {
@@ -450,8 +491,6 @@
       moved: false
     };
     card.setPointerCapture(event.pointerId);
-    card.classList.add('dragging');
-    highlightTargets(true);
     card.addEventListener('pointermove', onPointerMove);
     card.addEventListener('pointerup', onPointerUp, { once: true });
   }
@@ -460,7 +499,11 @@
     if (!drag) return;
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
-    if (Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+    if (Math.abs(dx) + Math.abs(dy) > 6 && !drag.moved) {
+      drag.moved = true;
+      drag.card.classList.add('dragging');
+      highlightTargets(true);
+    }
     if (!drag.moved) return;
     drag.card.style.position = 'fixed';
     drag.card.style.left = `${event.clientX - drag.offsetX}px`;
@@ -471,11 +514,12 @@
 
   function onPointerUp(event) {
     if (!drag) return;
+    const moved = drag.moved;
     const target = document.elementFromPoint(event.clientX, event.clientY);
     const drop = target && target.closest('.drop-target, .foundation-pile, .empty-foundation');
     const payload = drag.payload;
     cleanupDrag();
-    if (drop) sendMove(payload, drop);
+    if (moved && drop) sendMove(payload, drop);
   }
 
   function cleanupDrag() {
@@ -487,7 +531,11 @@
     drag.card.style.top = '';
     drag.card.style.zIndex = '';
     drag.card.style.pointerEvents = '';
-    highlightTargets(false);
+    if (selected) {
+      syncSelectionVisual();
+    } else {
+      highlightTargets(false);
+    }
     drag = null;
   }
 
@@ -499,6 +547,7 @@
 
   function sendMove(payload, target) {
     const dropType = target.dataset.dropType;
+    if (!payload || !payload.source || !dropType) return false;
     if (dropType === 'foundation' || dropType === 'foundation-new') {
       const suit = target.dataset.suit || target.closest('[data-suit]')?.dataset.suit;
       socket.emit('card:foundation', {
@@ -507,16 +556,23 @@
         destinationPileId: target.dataset.foundationId || null,
         suit
       });
-      return;
+      return true;
     }
     if (dropType === 'tableau') {
       const sourceType = payload.source.type;
+      const destinationColumnIndex = Number(target.dataset.columnIndex);
+      if (sourceType === 'tableau' && payload.source.columnIndex === destinationColumnIndex) {
+        PounceUI.toast('Pick a different start pile.', 'quiet');
+        return false;
+      }
       socket.emit(sourceType === 'tableau' ? 'card:tableauStack' : 'card:tableau', {
         cardId: payload.cardId,
         source: payload.source,
-        destinationColumnIndex: Number(target.dataset.columnIndex)
+        destinationColumnIndex
       });
+      return true;
     }
+    return false;
   }
 
   function escapeHtml(value) {
@@ -555,6 +611,12 @@
     }
   });
 
+  document.addEventListener('click', (event) => {
+    if (!selected) return;
+    if (event.target.closest('.card:not(.card-back), .drop-target, .foundation-pile, .empty-foundation')) return;
+    clearSelection();
+  });
+
   socket.on('connect', () => {
     if (token && (roomCodeFromUrl || storedRoom)) {
       socket.emit('room:reconnect', { token });
@@ -571,7 +633,7 @@
   socket.on('room:update', (state) => { publicState = state; render(); });
   socket.on('game:publicState', (state) => { publicState = state; render(); });
   socket.on('game:privateState', (state) => { privateState = state; latestMyPlayerId = state.playerId; render(); });
-  socket.on('card:moved', () => PounceUI.sounds.place());
+  socket.on('card:moved', handleCardMoved);
   socket.on('stock:updated', () => PounceUI.sounds.flip());
   socket.on('stock:drawModeChanged', () => PounceUI.toast('Stock now draws 1 card.'));
   socket.on('round:endedEarly', () => PounceUI.toast('End-round vote passed. Scoring now.'));
