@@ -10,6 +10,7 @@
     roomCode: document.getElementById('roomCode'),
     roundNumber: document.getElementById('roundNumber'),
     opponents: document.getElementById('opponents'),
+    opponentPreviews: document.getElementById('opponentPreviews'),
     foundationGrid: document.getElementById('foundationGrid'),
     pouncePile: document.getElementById('pouncePile'),
     tableau: document.getElementById('tableau'),
@@ -53,6 +54,7 @@
     els.roomCode.textContent = publicState.code;
     els.roundNumber.textContent = publicState.round;
     renderOpponents();
+    renderOpponentPreviews();
     renderFoundations();
     renderPrivate();
     renderPhase();
@@ -74,6 +76,76 @@
         </div>
       `;
     }).join('');
+  }
+
+  function renderOpponentPreviews() {
+    const opponents = (publicState.players || []).filter((player) => player.id !== latestMyPlayerId && player.handPreview);
+    if (!opponents.length) {
+      els.opponentPreviews.innerHTML = '';
+      els.opponentPreviews.classList.add('hidden');
+      return;
+    }
+    els.opponentPreviews.classList.remove('hidden');
+    els.opponentPreviews.innerHTML = opponents.map((player) => {
+      const preview = player.handPreview;
+      return `
+        <section class="opponent-preview" style="--owner-color:${player.markerColor}">
+          <div class="preview-head">
+            <span class="player-dot"></span>
+            <strong>${escapeHtml(player.name)}</strong>
+            <span>${preview.pounceCount}/${preview.pounceTotal || 7}</span>
+          </div>
+          <div class="preview-hand">
+            ${miniPile('P', preview.pounceTop, preview.pounceCount, player.markerColor)}
+            ${miniBackPile('S', preview.stockCount)}
+            ${miniPile('W', preview.wasteTop, preview.wasteCount, player.markerColor)}
+            <div class="preview-start-piles">
+              ${preview.tableau.map((pile, index) => miniStartPile(pile, index, player.markerColor)).join('')}
+            </div>
+          </div>
+        </section>
+      `;
+    }).join('');
+  }
+
+  function miniPile(label, card, count, ownerColor) {
+    return `
+      <div class="mini-pile">
+        <span class="mini-label">${label}</span>
+        ${card ? miniCard(card, ownerColor) : '<span class="mini-empty"></span>'}
+        <span class="mini-count">${count}</span>
+      </div>
+    `;
+  }
+
+  function miniBackPile(label, count) {
+    return `
+      <div class="mini-pile">
+        <span class="mini-label">${label}</span>
+        <span class="mini-card-back"></span>
+        <span class="mini-count">${count}</span>
+      </div>
+    `;
+  }
+
+  function miniStartPile(pile, index, ownerColor) {
+    const hiddenDots = Math.min(pile.hiddenCount || 0, 3);
+    return `
+      <div class="mini-start-pile" title="Start pile ${index + 1}: ${pile.count} cards">
+        <span class="mini-label">${index + 1}</span>
+        <span class="mini-hidden-dots">${Array.from({ length: hiddenDots }).map(() => '<i></i>').join('')}</span>
+        ${pile.topCard ? miniCard(pile.topCard, ownerColor) : '<span class="mini-empty"></span>'}
+        <span class="mini-count">${pile.count}</span>
+      </div>
+    `;
+  }
+
+  function miniCard(card, ownerColor) {
+    return `
+      <span class="mini-card ${card.color}" style="--owner-color:${ownerColor}">
+        <b>${PounceCards.rankLabel(card.rank)}</b>${PounceCards.SUIT_SYMBOLS[card.suit]}
+      </span>
+    `;
   }
 
   function renderFoundations() {

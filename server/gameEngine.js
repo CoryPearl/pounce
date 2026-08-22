@@ -420,6 +420,27 @@ function foundationPublicState(room) {
   }));
 }
 
+function playerPublicHandPreview(player) {
+  const state = player.roundState;
+  if (!state) return null;
+  return {
+    pounceCount: state.pouncePile.length,
+    pounceTotal: state.initialPounceCount,
+    pounceTop: cloneCardPublic(exposedPounceCard(player)),
+    stockCount: state.stock.length,
+    wasteCount: state.waste.length,
+    wasteTop: cloneCardPublic(exposedWasteCard(player)),
+    tableau: state.tableau.map((column) => {
+      const top = column[column.length - 1] || null;
+      return {
+        count: column.length,
+        hiddenCount: column.filter((entry) => !isTableauFaceUp(entry)).length,
+        topCard: top && isTableauFaceUp(top) ? cloneCardPublic(tableauCard(top)) : null
+      };
+    })
+  };
+}
+
 function publicState(room) {
   return {
     code: room.code,
@@ -437,7 +458,8 @@ function publicState(room) {
       isHost: room.hostId === player.id,
       markerColor: player.markerColor,
       pounceCount: player.roundState ? player.roundState.pouncePile.length : null,
-      pounceTotal: player.roundState ? player.roundState.initialPounceCount : null
+      pounceTotal: player.roundState ? player.roundState.initialPounceCount : null,
+      handPreview: playerPublicHandPreview(player)
     })),
     foundations: foundationPublicState(room),
     lastRoundResults: room.lastRoundResults
@@ -490,6 +512,7 @@ module.exports = {
   finishRound,
   publicState,
   privateState,
+  playerPublicHandPreview,
   cloneCardPublic,
   createTableauEntry,
   tableauCard,
