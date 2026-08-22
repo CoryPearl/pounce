@@ -18,6 +18,40 @@ function registerSocketHandlers(io, roomManager) {
     socket.emit('move:rejected', { reason: result.reason || 'Move rejected.' });
   }
 
+  function updateStockDrawVote(room, player, wantsDrawOne) {
+    if (!room.stockDrawVotes) room.stockDrawVotes = new Set();
+    if (room.stockDrawCount === 1) {
+      return { ok: true, changed: false };
+    }
+    if (wantsDrawOne) {
+      room.stockDrawVotes.add(player.id);
+    } else {
+      room.stockDrawVotes.delete(player.id);
+    }
+    const connectedIds = room.players.filter((candidate) => candidate.connected).map((candidate) => candidate.id);
+    const unanimous = connectedIds.length > 0 && connectedIds.every((playerId) => room.stockDrawVotes.has(playerId));
+    if (unanimous) {
+      room.stockDrawCount = 1;
+      return { ok: true, changed: true };
+    }
+    return { ok: true, changed: false };
+  }
+
+  function updateEndRoundVote(room, player, wantsEndRound) {
+    if (!room.endRoundVotes) room.endRoundVotes = new Set();
+    if (room.phase !== 'playing') {
+      return { ok: false, reason: 'The round is not active.' };
+    }
+    if (wantsEndRound) {
+      room.endRoundVotes.add(player.id);
+    } else {
+      room.endRoundVotes.delete(player.id);
+    }
+    const connectedIds = room.players.filter((candidate) => candidate.connected).map((candidate) => candidate.id);
+    const unanimous = connectedIds.length > 0 && connectedIds.every((playerId) => room.endRoundVotes.has(playerId));
+    return { ok: true, changed: unanimous };
+  }
+
   function withPlayer(socket, callback) {
     const found = roomManager.getRoomBySocket(socket.id);
     if (!found) {
@@ -168,6 +202,35 @@ function registerSocketHandlers(io, roomManager) {
           return;
         }
         socket.emit('stock:updated', result);
+        emitStates(room);
+      });
+    });
+
+    socket.on('stock:voteDrawOne', ({ vote } = {}) => {
+      withPlayer(socket, (room, player) => {
+        const result = updateStockDrawVote(room, player, Boolean(vote));
+        if (result.changed) {
+          io.to(room.code).emit('stock:drawModeChanged', { drawCount: room.stockDrawCount });
+        }
+        emitStates(room);
+      });
+    });
+
+    socket.on('round:voteEndEarly', ({ vote } = {}) => {
+      withPlayer(socket, (room, player) => {
+        const voteResult = updateEndRoundVote(room, player, Boolean(vote));
+        if (!voteResult.ok) {
+          socket.emit('room:error', { reason: voteResult.reason });
+          return;
+        }
+        if (voteResult.changed) {
+          const result = engine.finishRoundEarly(room);
+          io.to(room.code).emit('round:endedEarly', { reason: 'Vote passed' });
+          io.to(room.code).emit('round:results', { results: result.results, winner: result.winner, reason: result.reason });
+          if (room.phase === 'finished') {
+            io.to(room.code).emit('game:finished', { winner: result.winner, results: result.results });
+          }
+        }
         emitStates(room);
       });
     });

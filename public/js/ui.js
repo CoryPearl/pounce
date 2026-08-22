@@ -86,6 +86,8 @@
         <li>Start piles build downward while alternating red and black.</li>
         <li>An empty start pile can begin with your exposed Pounce card or with a King.</li>
         <li>Use cards from your Pounce Pile, start piles, and stock.</li>
+        <li>Stock draws 3 cards unless every player votes to switch to 1 card.</li>
+        <li>If every player votes to end the round early, scores are counted immediately.</li>
         <li>Everyone plays at the same time.</li>
         <li>When your Pounce Pile reaches zero, call POUNCE.</li>
         <li>Every center card you own scores +1.</li>

@@ -17,6 +17,7 @@
     stockPile: document.getElementById('stockPile'),
     wastePile: document.getElementById('wastePile'),
     pounceButton: document.getElementById('pounceButton'),
+    stockVotePanel: document.getElementById('stockVotePanel'),
     statusOverlay: document.getElementById('statusOverlay'),
     overlayContent: document.getElementById('overlayContent'),
     muteButton: document.getElementById('muteButton'),
@@ -57,6 +58,7 @@
     renderOpponentPreviews();
     renderFoundations();
     renderPrivate();
+    renderStockVote();
     renderPhase();
     renderDebug();
   }
@@ -106,6 +108,51 @@
         </section>
       `;
     }).join('');
+  }
+
+  function renderStockVote() {
+    if (!publicState || publicState.phase === 'lobby') {
+      els.stockVotePanel.classList.add('hidden');
+      return;
+    }
+    const stockVotes = publicState.stockDrawVotes || [];
+    const endVotes = publicState.endRoundVotes || [];
+    const current = publicState.players.find((player) => player.id === latestMyPlayerId);
+    const voted = stockVotes.includes(latestMyPlayerId);
+    const endVoted = endVotes.includes(latestMyPlayerId);
+    const drawOneActive = publicState.stockDrawCount === 1;
+    const canVoteEnd = publicState.phase === 'playing' && current;
+    els.stockVotePanel.classList.remove('hidden');
+    els.stockVotePanel.innerHTML = `
+      <section class="side-vote-section">
+        <div class="stock-vote-title">Stock Draw</div>
+        <div class="stock-vote-mode">${drawOneActive ? '1 card' : '3 cards'}</div>
+        <div class="stock-vote-count">${publicState.stockDrawVoteCount || 0}/${publicState.stockDrawVoteRequired || 0} voted</div>
+        <button class="stock-vote-button ${voted ? 'voted' : ''}" data-vote-action="draw-one" type="button" ${drawOneActive || !current ? 'disabled' : ''}>
+          ${drawOneActive ? 'Changed' : voted ? 'Voted' : 'Vote Draw 1'}
+        </button>
+      </section>
+      <section class="side-vote-section">
+        <div class="stock-vote-title">End Round</div>
+        <div class="stock-vote-mode">Score now</div>
+        <div class="stock-vote-count">${publicState.endRoundVoteCount || 0}/${publicState.endRoundVoteRequired || 0} voted</div>
+        <button class="stock-vote-button danger-vote ${endVoted ? 'voted' : ''}" data-vote-action="end-round" type="button" ${!canVoteEnd ? 'disabled' : ''}>
+          ${publicState.phase === 'playing' ? (endVoted ? 'Voted' : 'Vote End') : 'Closed'}
+        </button>
+      </section>
+    `;
+    const drawButton = els.stockVotePanel.querySelector('[data-vote-action="draw-one"]');
+    if (drawButton && !drawOneActive && current) {
+      drawButton.addEventListener('click', () => {
+        socket.emit('stock:voteDrawOne', { vote: !voted });
+      });
+    }
+    const endButton = els.stockVotePanel.querySelector('[data-vote-action="end-round"]');
+    if (endButton && canVoteEnd) {
+      endButton.addEventListener('click', () => {
+        socket.emit('round:voteEndEarly', { vote: !endVoted });
+      });
+    }
   }
 
   function miniPile(label, card, count, ownerColor) {
@@ -526,6 +573,8 @@
   socket.on('game:privateState', (state) => { privateState = state; latestMyPlayerId = state.playerId; render(); });
   socket.on('card:moved', () => PounceUI.sounds.place());
   socket.on('stock:updated', () => PounceUI.sounds.flip());
+  socket.on('stock:drawModeChanged', () => PounceUI.toast('Stock now draws 1 card.'));
+  socket.on('round:endedEarly', () => PounceUI.toast('End-round vote passed. Scoring now.'));
   socket.on('move:rejected', (error) => {
     PounceUI.sounds.invalid();
     PounceUI.toast(error.reason, 'danger');

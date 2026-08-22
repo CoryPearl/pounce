@@ -214,6 +214,18 @@ test('stock advances and cycles deterministically', () => {
   assert.deepEqual(p1.roundState.stock.map((c) => c.rank), [1]);
 });
 
+test('stock can draw one card when room draw mode changes', () => {
+  const p1 = player('p1');
+  p1.roundState.stock = [1, 2, 3].map((rank) => card('p1', 'hearts', rank));
+  const r = room([p1, player('p2')]);
+  r.stockDrawCount = 1;
+
+  assert.equal(engine.drawStock(r, 'p1').ok, true);
+  assert.equal(p1.roundState.stock.length, 2);
+  assert.equal(p1.roundState.waste.length, 1);
+  assert.equal(p1.roundState.waste.at(-1).rank, 1);
+});
+
 test('scoring counts center ownership and Pounce penalties', () => {
   const p1 = player('p1', 'B-Bippy');
   const p2 = player('p2', 'Gassy');
@@ -247,6 +259,26 @@ test('Pounce call requires zero Pounce cards and moves fail after call', () => {
     source: { type: 'pounce' }
   });
   assert.equal(move.ok, false);
+});
+
+test('early round finish scores without requiring empty Pounce piles', () => {
+  const p1 = player('p1', 'B-Bippy');
+  const p2 = player('p2', 'Gassy');
+  p1.roundState.pouncePile = [card('p1', 'hearts', 4)];
+  p2.roundState.pouncePile = [card('p2', 'clubs', 4), card('p2', 'spades', 9)];
+  const r = room([p1, p2]);
+  r.foundations = [
+    { id: 'f1', suit: 'hearts', cards: [card('p1', 'hearts', 1), card('p2', 'hearts', 2)] }
+  ];
+
+  const result = engine.finishRoundEarly(r);
+  assert.equal(result.ok, true);
+  assert.equal(result.reason, 'vote');
+  assert.equal(r.phase, 'roundResults');
+  assert.equal(r.roundEndReason, 'vote');
+  assert.equal(result.results.find((row) => row.playerId === 'p1').roundScore, 0);
+  assert.equal(result.results.find((row) => row.playerId === 'p2').roundScore, -1);
+  assert.equal(result.results.some((row) => row.called), false);
 });
 
 test('simultaneous center moves cannot both succeed', () => {

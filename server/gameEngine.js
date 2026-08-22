@@ -334,7 +334,7 @@ function drawStock(room, playerId) {
     state.stockPosition = 0;
   }
 
-  const drawCount = Math.min(3, state.stock.length);
+  const drawCount = Math.min(room.stockDrawCount || 3, state.stock.length);
   for (let i = 0; i < drawCount; i += 1) {
     state.waste.push(state.stock.shift());
   }
@@ -371,12 +371,35 @@ function calculateRoundScore(room) {
   });
 }
 
+function completeRound(room, endingPlayerId = null, reason = 'pounce') {
+  room.phase = 'roundResults';
+  room.lastPouncePlayerId = reason === 'pounce' ? endingPlayerId : null;
+  room.roundEndReason = reason;
+  const results = calculateRoundScore(room);
+  const maxScore = Math.max(...results.map((row) => row.total));
+  const roundHigh = Math.max(...results.map((row) => row.roundScore));
+  const leaderHigh = maxScore;
+  results.forEach((row) => {
+    row.roundWinner = row.roundScore === roundHigh;
+    row.overallLeader = row.total === leaderHigh;
+  });
+  room.lastRoundResults = results;
+  if (maxScore >= 100) {
+    room.phase = 'finished';
+    const winners = results.filter((row) => row.total === maxScore);
+    room.winner = winners[0];
+  }
+  return { ok: true, results, winner: room.winner, reason };
+}
+
 function startRound(room, options = {}) {
   room.phase = 'playing';
   room.round = room.round || 1;
   room.foundations = [];
   room.lastPouncePlayerId = null;
   room.lastRoundResults = null;
+  room.roundEndReason = null;
+  room.endRoundVotes = new Set();
   room.winner = null;
   room.players.forEach((player, index) => {
     player.ready = false;
@@ -392,23 +415,13 @@ function finishRound(room, pouncingPlayerId) {
   if (!active.ok) return active;
   const player = getPlayer(room, pouncingPlayerId);
   if (!canCallPounce(player)) return { ok: false, reason: 'Your Pounce pile is not empty yet.' };
-  room.phase = 'roundResults';
-  room.lastPouncePlayerId = pouncingPlayerId;
-  const results = calculateRoundScore(room);
-  const maxScore = Math.max(...results.map((row) => row.total));
-  const roundHigh = Math.max(...results.map((row) => row.roundScore));
-  const leaderHigh = maxScore;
-  results.forEach((row) => {
-    row.roundWinner = row.roundScore === roundHigh;
-    row.overallLeader = row.total === leaderHigh;
-  });
-  room.lastRoundResults = results;
-  if (maxScore >= 100) {
-    room.phase = 'finished';
-    const winners = results.filter((row) => row.total === maxScore);
-    room.winner = winners[0];
-  }
-  return { ok: true, results, winner: room.winner };
+  return completeRound(room, pouncingPlayerId, 'pounce');
+}
+
+function finishRoundEarly(room) {
+  const active = requireActiveRound(room);
+  if (!active.ok) return active;
+  return completeRound(room, null, 'vote');
 }
 
 function foundationPublicState(room) {
@@ -442,6 +455,13 @@ function playerPublicHandPreview(player) {
 }
 
 function publicState(room) {
+  const connectedPlayerIds = room.players.filter((player) => player.connected).map((player) => player.id);
+  const stockDrawVotes = room.stockDrawVotes
+    ? Array.from(room.stockDrawVotes).filter((playerId) => connectedPlayerIds.includes(playerId))
+    : [];
+  const endRoundVotes = room.endRoundVotes
+    ? Array.from(room.endRoundVotes).filter((playerId) => connectedPlayerIds.includes(playerId))
+    : [];
   return {
     code: room.code,
     hostId: room.hostId,
@@ -449,6 +469,14 @@ function publicState(room) {
     round: room.round,
     winner: room.winner,
     debug: Boolean(room.debug),
+    stockDrawCount: room.stockDrawCount || 3,
+    stockDrawVotes,
+    stockDrawVoteCount: stockDrawVotes.length,
+    stockDrawVoteRequired: connectedPlayerIds.length,
+    endRoundVotes,
+    endRoundVoteCount: endRoundVotes.length,
+    endRoundVoteRequired: connectedPlayerIds.length,
+    roundEndReason: room.roundEndReason || null,
     players: room.players.map((player) => ({
       id: player.id,
       name: player.name,
@@ -510,6 +538,7 @@ module.exports = {
   calculateRoundScore,
   startRound,
   finishRound,
+  finishRoundEarly,
   publicState,
   privateState,
   playerPublicHandPreview,

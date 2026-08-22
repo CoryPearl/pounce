@@ -57,6 +57,76 @@ body.game-body {
   font-size: 20px;
 }
 
+.stock-vote-panel {
+  position: fixed;
+  right: 14px;
+  top: 76px;
+  z-index: 45;
+  width: 126px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(16, 21, 18, 0.92);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.side-vote-section + .side-vote-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.stock-vote-title {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stock-vote-mode {
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.stock-vote-count {
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stock-vote-button {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: #111814;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stock-vote-button.voted {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.stock-vote-button.danger-vote {
+  color: var(--text);
+  background: var(--danger);
+}
+
+.stock-vote-button.danger-vote.voted {
+  background: rgba(255, 90, 95, 0.28);
+  border-color: rgba(255, 90, 95, 0.62);
+}
+
+.stock-vote-button:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
 .table {
   min-height: 0;
   display: grid;
@@ -69,8 +139,11 @@ body.game-body {
 
 .center-zone {
   min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   padding: 20px;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .opponent-previews {
@@ -212,39 +285,55 @@ body.game-body {
 
 .center-zone h2 {
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .foundation-grid {
+  --card-w: 46px;
+  --card-h: 64px;
   display: grid;
   grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   gap: 14px;
   width: min(1120px, 100%);
+  height: clamp(150px, 28vh, 230px);
+  min-height: 0;
   margin: 0 auto;
 }
 
 .suit-group {
-  min-height: 224px;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px;
   background: rgba(0, 0, 0, 0.12);
+  overflow: hidden;
 }
 
 .suit-group h3 {
-  margin-bottom: 10px;
+  margin-bottom: 7px;
   color: rgba(255, 255, 255, 0.82);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .foundation-piles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+  grid-auto-rows: minmax(72px, 1fr);
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(246, 211, 74, 0.55) rgba(255, 255, 255, 0.08);
 }
 
 .foundation-pile, .empty-foundation {
-  min-height: 118px;
+  min-height: 72px;
   border: 1px dashed rgba(255, 255, 255, 0.26);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.72);
@@ -256,21 +345,22 @@ body.game-body {
 
 .foundation-pile .card {
   pointer-events: none;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
 }
 
 .depth {
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 4px;
+  top: 4px;
   z-index: 2;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   color: #111814;
   background: var(--accent);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -624,12 +714,22 @@ body.game-body {
     order: 5;
   }
 
+  .stock-vote-panel {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+  }
+
   .table {
     min-height: calc(100vh - 110px);
   }
 
   .foundation-grid {
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    --card-w: 40px;
+    --card-h: 56px;
+    grid-template-columns: repeat(4, minmax(142px, 1fr));
+    min-width: 620px;
+    height: 172px;
   }
 
   .cards-layout {
@@ -649,7 +749,12 @@ body.game-body {
   }
 
   .foundation-grid {
-    grid-template-columns: 1fr;
+    --card-w: 34px;
+    --card-h: 48px;
+    grid-template-columns: repeat(4, minmax(122px, 1fr));
+    min-width: 520px;
+    height: 146px;
+    gap: 8px;
   }
 
   .tableau {

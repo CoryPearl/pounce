@@ -25,6 +25,9 @@ class RoomManager {
       lastRoundResults: null,
       lastPouncePlayerId: null,
       winner: null,
+      stockDrawCount: 3,
+      stockDrawVotes: new Set(),
+      endRoundVotes: new Set(),
       debug: Boolean(debug)
     };
     this.rooms.set(code, room);
@@ -140,6 +143,9 @@ class RoomManager {
     room.lastRoundResults = null;
     room.lastPouncePlayerId = null;
     room.winner = null;
+    room.stockDrawCount = 3;
+    room.stockDrawVotes = new Set();
+    room.endRoundVotes = new Set();
     room.players.forEach((player) => {
       player.score = 0;
       player.ready = false;

@@ -10,7 +10,7 @@ No accounts are required. Players choose temporary Pounce Names and share a shor
 
 Each player has a private 52-card deck. At the beginning of a round, every player receives a 7-card Pounce pile, five start piles, and a stock pile. The start piles are dealt with 1, 2, 3, 4, and 5 cards; only the top card of each start pile is face up. The Pounce pile has one exposed top card. Empty start piles can be started with the exposed Pounce card or with a King.
 
-Center piles are shared by all players. A center pile starts with an Ace and builds upward by suit through King. Start piles build downward while alternating red and black. Stock uses draw-three rules, and only the exposed waste card can be played.
+Center piles are shared by all players. A center pile starts with an Ace and builds upward by suit through King. Start piles build downward while alternating red and black. Stock starts with draw-three rules, and only the exposed waste card can be played. During a game, players can unanimously vote to switch stock drawing to one card at a time. Players can also unanimously vote to end the current round early and score immediately.
 
 When a player empties their Pounce pile, they can call POUNCE. The round stops immediately. Each center card owned by a player is worth +1. Each card remaining in that player's Pounce pile is worth -1. Rounds continue until at least one player reaches 100 points; the highest total score wins.
 
@@ -89,6 +89,8 @@ Client to server:
 - `card:tableau`
 - `card:tableauStack`
 - `stock:draw`
+- `stock:voteDrawOne`
+- `round:voteEndEarly`
 - `pounce:call`
 - `round:ready`
 - `round:start`
@@ -106,6 +108,8 @@ Server to client:
 - `card:moved`
 - `move:rejected`
 - `stock:updated`
+- `stock:drawModeChanged`
+- `round:endedEarly`
 - `player:disconnected`
 - `pounce:called`
 - `round:results`
