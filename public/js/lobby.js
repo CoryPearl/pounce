@@ -45,6 +45,32 @@
     if (me.roomCode) localStorage.setItem('pounceRoomCode', me.roomCode);
   }
 
+  function clearLocalSession() {
+    localStorage.removeItem('pouncePlayerId');
+    localStorage.removeItem('pounceReconnectToken');
+    localStorage.removeItem('pounceRoomCode');
+    me = { playerId: null, token: null, roomCode: null };
+  }
+
+  function askToRejoin() {
+    const code = me.roomCode || 'your room';
+    const close = PounceUI.modal('Rejoin Game?', `
+      <p class="rules-list">You were previously in room <strong>${escapeHtml(code)}</strong>.</p>
+      <div class="form-row">
+        <button class="secondary" type="button" id="skipRejoin">Start Fresh</button>
+        <button class="primary" type="button" id="confirmRejoin">Rejoin</button>
+      </div>
+    `);
+    document.getElementById('confirmRejoin').onclick = () => {
+      close();
+      socket.emit('room:reconnect', { token: me.token });
+    };
+    document.getElementById('skipRejoin').onclick = () => {
+      close();
+      clearLocalSession();
+    };
+  }
+
   function goalLabel(goal) {
     return goal === null ? 'No point goal' : `First to ${goal} points wins`;
   }
@@ -153,7 +179,7 @@
 
   socket.on('connect', () => {
     els.connectionStatus.textContent = 'Connected';
-    if (me.token && me.roomCode) socket.emit('room:reconnect', { token: me.token });
+    if (me.token && me.roomCode) askToRejoin();
   });
   socket.on('disconnect', () => { els.connectionStatus.textContent = 'Disconnected'; });
   socket.on('room:created', (data) => saveSession({ playerId: data.playerId, token: data.token, roomCode: data.code }));

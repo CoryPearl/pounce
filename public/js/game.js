@@ -595,6 +595,26 @@
     socket.emit('room:leave');
   }
 
+  function askToRejoin() {
+    const code = roomCodeFromUrl || storedRoom || 'your room';
+    const close = PounceUI.modal('Rejoin Game?', `
+      <p class="rules-list">Reconnect to room <strong>${escapeHtml(code)}</strong>?</p>
+      <div class="form-row">
+        <button class="secondary" type="button" id="skipRejoin">Back to Lobby</button>
+        <button class="primary" type="button" id="confirmRejoin">Rejoin</button>
+      </div>
+    `);
+    document.getElementById('confirmRejoin').onclick = () => {
+      close();
+      socket.emit('room:reconnect', { token });
+    };
+    document.getElementById('skipRejoin').onclick = () => {
+      close();
+      clearLocalSession();
+      window.location.href = '/';
+    };
+  }
+
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({
       '&': '&amp;',
@@ -640,7 +660,7 @@
 
   socket.on('connect', () => {
     if (token && (roomCodeFromUrl || storedRoom)) {
-      socket.emit('room:reconnect', { token });
+      askToRejoin();
     } else {
       window.location.href = '/';
     }
