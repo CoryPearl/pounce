@@ -20,6 +20,7 @@
     stockVotePanel: document.getElementById('stockVotePanel'),
     statusOverlay: document.getElementById('statusOverlay'),
     overlayContent: document.getElementById('overlayContent'),
+    leaveGame: document.getElementById('leaveGame'),
     muteButton: document.getElementById('muteButton'),
     howToPlay: document.getElementById('howToPlay')
   };
@@ -246,14 +247,20 @@
     return el.outerHTML;
   }
 
+  function numericCssVar(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name);
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
   function stackGapFor(cardCount) {
     if (cardCount <= 1) return 0;
     const narrow = window.innerWidth <= 560;
-    const tablet = window.innerWidth <= 940;
+    const tablet = window.innerWidth <= 1180;
     const compactHeight = window.innerHeight <= 760;
-    const cardHeight = narrow ? 80 : tablet ? 88 : 108;
-    const targetHeight = narrow ? 168 : compactHeight ? 184 : 224;
-    const comfortableGap = narrow ? 13 : tablet ? 15 : 18;
+    const cardHeight = numericCssVar('--card-h', narrow ? 76 : tablet ? 88 : 108);
+    const targetHeight = narrow ? 154 : tablet ? Math.max(148, Math.min(206, window.innerHeight * 0.23)) : compactHeight ? 184 : 224;
+    const comfortableGap = narrow ? 11 : tablet ? 13 : 18;
     const minimumGap = narrow ? 7 : 9;
     const fittedGap = Math.floor((targetHeight - cardHeight) / (cardCount - 1));
     return Math.max(minimumGap, Math.min(comfortableGap, fittedGap));
@@ -371,6 +378,8 @@
     const winner = publicState.winner || rows[0];
     showOverlay(`
       <h1>${final ? `${escapeHtml(winner.name).toUpperCase()} WINS!` : `Round ${publicState.round} Results`}</h1>
+      ${!final && publicState.tieBreaker ? '<p class="result-note">Tie at the point goal. Play another round.</p>' : ''}
+      ${!final && publicState.matchGoal === null ? '<p class="result-note">No point goal is set.</p>' : ''}
       <table class="results-table">
         <thead><tr><th>Player</th><th>Center</th><th>Pounce Left</th><th>Round</th><th>Total</th></tr></thead>
         <tbody>
@@ -575,6 +584,17 @@
     return false;
   }
 
+  function clearLocalSession() {
+    localStorage.removeItem('pouncePlayerId');
+    localStorage.removeItem('pounceReconnectToken');
+    localStorage.removeItem('pounceRoomCode');
+  }
+
+  function leaveGame() {
+    if (!window.confirm('Leave this Pounce game?')) return;
+    socket.emit('room:leave');
+  }
+
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({
       '&': '&amp;',
@@ -587,6 +607,7 @@
 
   els.stockPile.addEventListener('click', () => socket.emit('stock:draw'));
   els.pounceButton.addEventListener('click', () => socket.emit('pounce:call'));
+  els.leaveGame.addEventListener('click', leaveGame);
   els.howToPlay.addEventListener('click', PounceUI.howToPlay);
   els.muteButton.textContent = PounceUI.isMuted() ? '♩' : '♪';
   els.muteButton.addEventListener('click', () => {
@@ -637,6 +658,19 @@
   socket.on('stock:updated', () => PounceUI.sounds.flip());
   socket.on('stock:drawModeChanged', () => PounceUI.toast('Stock now draws 1 card.'));
   socket.on('round:endedEarly', () => PounceUI.toast('End-round vote passed. Scoring now.'));
+  socket.on('room:left', () => {
+    clearLocalSession();
+    window.location.href = '/';
+  });
+  socket.on('room:closed', ({ reason } = {}) => {
+    clearLocalSession();
+    showOverlay(`
+      <h1>Room Closed</h1>
+      <p>${escapeHtml(reason || 'Not enough players remain in this room.')}</p>
+      <button class="primary" type="button" id="closedBackLobby">Back to Lobby</button>
+    `);
+    document.getElementById('closedBackLobby').onclick = () => { window.location.href = '/'; };
+  });
   socket.on('move:rejected', (error) => {
     PounceUI.sounds.invalid();
     PounceUI.toast(error.reason, 'danger');

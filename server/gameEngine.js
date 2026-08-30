@@ -384,12 +384,17 @@ function completeRound(room, endingPlayerId = null, reason = 'pounce') {
     row.overallLeader = row.total === leaderHigh;
   });
   room.lastRoundResults = results;
-  if (maxScore >= 100) {
-    room.phase = 'finished';
+  const matchGoal = room.matchGoal === undefined ? 100 : room.matchGoal;
+  if (matchGoal !== null && maxScore >= matchGoal) {
     const winners = results.filter((row) => row.total === maxScore);
-    room.winner = winners[0];
+    if (winners.length === 1) {
+      room.phase = 'finished';
+      room.winner = winners[0];
+    } else {
+      room.tieBreaker = true;
+    }
   }
-  return { ok: true, results, winner: room.winner, reason };
+  return { ok: true, results, winner: room.winner || null, reason };
 }
 
 function startRound(room, options = {}) {
@@ -399,6 +404,7 @@ function startRound(room, options = {}) {
   room.lastPouncePlayerId = null;
   room.lastRoundResults = null;
   room.roundEndReason = null;
+  room.tieBreaker = false;
   room.endRoundVotes = new Set();
   room.stockDrawCount = 3;
   room.stockDrawVotes = new Set();
@@ -470,6 +476,8 @@ function publicState(room) {
     phase: room.phase,
     round: room.round,
     winner: room.winner,
+    matchGoal: room.matchGoal === undefined ? 100 : room.matchGoal,
+    tieBreaker: Boolean(room.tieBreaker),
     debug: Boolean(room.debug),
     stockDrawCount: room.stockDrawCount || 3,
     stockDrawVotes,

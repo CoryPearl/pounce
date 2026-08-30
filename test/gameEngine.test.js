@@ -320,3 +320,68 @@ test('simultaneous center moves cannot both succeed', () => {
   assert.equal(p2.roundState.pouncePile[0].id, six2.id);
   assert.equal(r.foundations[0].cards.filter((c) => c.rank === 6).length, 1);
 });
+
+
+test('custom match goal ends only when one player has the highest score over the goal', () => {
+  const p1 = player('p1', 'Bippy');
+  const p2 = player('p2', 'Gassy');
+  p1.score = 39;
+  p2.score = 35;
+  p1.roundState.pouncePile = [];
+  p2.roundState.pouncePile = [];
+  const r = room([p1, p2]);
+  r.matchGoal = 40;
+  r.lastPouncePlayerId = 'p1';
+  r.foundations = [
+    { id: 'f1', suit: 'hearts', cards: [card('p1', 'hearts', 1), card('p2', 'hearts', 2)] }
+  ];
+
+  const result = engine.finishRound(r, 'p1');
+
+  assert.equal(result.ok, true);
+  assert.equal(r.phase, 'finished');
+  assert.equal(result.winner.playerId, 'p1');
+});
+
+test('tie at or over match goal continues to another round', () => {
+  const p1 = player('p1', 'Bippy');
+  const p2 = player('p2', 'Gassy');
+  p1.score = 39;
+  p2.score = 39;
+  p1.roundState.pouncePile = [];
+  p2.roundState.pouncePile = [];
+  const r = room([p1, p2]);
+  r.matchGoal = 40;
+  r.lastPouncePlayerId = 'p1';
+  r.foundations = [
+    { id: 'f1', suit: 'hearts', cards: [card('p1', 'hearts', 1), card('p2', 'hearts', 2)] }
+  ];
+
+  const result = engine.finishRound(r, 'p1');
+
+  assert.equal(result.ok, true);
+  assert.equal(r.phase, 'roundResults');
+  assert.equal(result.winner, null);
+  assert.equal(r.tieBreaker, true);
+});
+
+test('no match goal never finishes the match automatically', () => {
+  const p1 = player('p1', 'Bippy');
+  const p2 = player('p2', 'Gassy');
+  p1.score = 500;
+  p2.score = 300;
+  p1.roundState.pouncePile = [];
+  p2.roundState.pouncePile = [];
+  const r = room([p1, p2]);
+  r.matchGoal = null;
+  r.lastPouncePlayerId = 'p1';
+  r.foundations = [
+    { id: 'f1', suit: 'hearts', cards: [card('p1', 'hearts', 1)] }
+  ];
+
+  const result = engine.finishRound(r, 'p1');
+
+  assert.equal(result.ok, true);
+  assert.equal(r.phase, 'roundResults');
+  assert.equal(result.winner, null);
+});

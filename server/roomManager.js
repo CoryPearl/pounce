@@ -3,6 +3,16 @@ const { PLAYER_COLORS } = require('./gameEngine');
 
 const MAX_PLAYERS = 4;
 const MIN_PLAYERS = 2;
+const DEFAULT_MATCH_GOAL = 100;
+
+function normalizeMatchGoal(goal) {
+  if (goal === null || goal === 'none' || goal === 'no-goal') return { ok: true, goal: null };
+  const parsed = Number(goal);
+  if (!Number.isInteger(parsed) || parsed < 10 || parsed > 999) {
+    return { ok: false, reason: 'Choose a point goal from 10 to 999, or no goal.' };
+  }
+  return { ok: true, goal: parsed };
+}
 
 class RoomManager {
   constructor() {
@@ -25,6 +35,7 @@ class RoomManager {
       lastRoundResults: null,
       lastPouncePlayerId: null,
       winner: null,
+      matchGoal: DEFAULT_MATCH_GOAL,
       stockDrawCount: 3,
       stockDrawVotes: new Set(),
       endRoundVotes: new Set(),
@@ -90,6 +101,18 @@ class RoomManager {
     return { ok: true, room, player };
   }
 
+  setMatchGoal(room, playerId, goal) {
+    if (!room) return { ok: false, reason: 'Room not found.' };
+    if (room.hostId !== playerId) return { ok: false, reason: 'Only the host can change the point goal.' };
+    if (room.phase !== 'lobby' && room.phase !== 'roundResults') {
+      return { ok: false, reason: 'Point goal can only be changed between rounds.' };
+    }
+    const normalized = normalizeMatchGoal(goal);
+    if (!normalized.ok) return normalized;
+    room.matchGoal = normalized.goal;
+    return { ok: true, goal: room.matchGoal };
+  }
+
   canStart(room) {
     const connected = room.players.filter((player) => player.connected).length;
     if (connected < MIN_PLAYERS && !room.debug) return { ok: false, reason: 'At least 2 players are required.' };
@@ -111,15 +134,23 @@ class RoomManager {
 
   removePlayer(room, playerId) {
     const index = room.players.findIndex((player) => player.id === playerId);
-    if (index === -1) return;
+    if (index === -1) return { ok: false, reason: 'Player not found.' };
     const [player] = room.players.splice(index, 1);
     this.tokens.delete(player.reconnectToken);
+    if (room.stockDrawVotes) room.stockDrawVotes.delete(player.id);
+    if (room.endRoundVotes) room.endRoundVotes.delete(player.id);
     if (room.hostId === player.id) this.transferHost(room);
     room.players.forEach((candidate, seat) => {
       candidate.seat = seat;
       candidate.markerColor = PLAYER_COLORS[seat % PLAYER_COLORS.length];
     });
+    if (room.players.length <= 1) {
+      room.players.forEach((candidate) => this.tokens.delete(candidate.reconnectToken));
+      this.rooms.delete(room.code);
+      return { ok: true, player, closed: true, code: room.code };
+    }
     this.cleanupRoom(room.code);
+    return { ok: true, player, closed: false, code: room.code };
   }
 
   transferHost(room) {
@@ -157,5 +188,7 @@ class RoomManager {
 module.exports = {
   RoomManager,
   MAX_PLAYERS,
-  MIN_PLAYERS
+  MIN_PLAYERS,
+  DEFAULT_MATCH_GOAL,
+  normalizeMatchGoal
 };

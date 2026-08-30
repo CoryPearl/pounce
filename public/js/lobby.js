@@ -19,6 +19,10 @@
     playerList: document.getElementById('playerList'),
     startGame: document.getElementById('startGame'),
     startHint: document.getElementById('startHint'),
+    matchSettings: document.getElementById('matchSettings'),
+    goalMode: document.getElementById('goalMode'),
+    customGoal: document.getElementById('customGoal'),
+    goalHint: document.getElementById('goalHint'),
     connectionStatus: document.getElementById('connectionStatus'),
     howToPlay: document.getElementById('howToPlay')
   };
@@ -41,6 +45,39 @@
     if (me.roomCode) localStorage.setItem('pounceRoomCode', me.roomCode);
   }
 
+  function goalLabel(goal) {
+    return goal === null ? 'No point goal' : `First to ${goal} points wins`;
+  }
+
+  function goalFromControls() {
+    if (els.goalMode.value === 'none') return null;
+    if (els.goalMode.value === 'custom') return Number(els.customGoal.value);
+    return Number(els.goalMode.value);
+  }
+
+  function syncGoalControls(room, isHost) {
+    const goal = room.matchGoal === undefined ? 100 : room.matchGoal;
+    const presetValues = ['50', '75', '100', '150', '200'];
+    if (goal === null) {
+      els.goalMode.value = 'none';
+    } else if (presetValues.includes(String(goal))) {
+      els.goalMode.value = String(goal);
+    } else {
+      els.goalMode.value = 'custom';
+    }
+    if (goal !== null) els.customGoal.value = goal;
+    els.customGoal.classList.toggle('hidden', els.goalMode.value !== 'custom');
+    els.goalHint.textContent = goal === null ? 'No goal. The host can keep starting new rounds.' : `${goalLabel(goal)}. Ties at the goal play another round.`;
+    els.goalMode.disabled = !isHost;
+    els.customGoal.disabled = !isHost || els.goalMode.value !== 'custom';
+    els.matchSettings.classList.toggle('locked', !isHost);
+  }
+
+  function sendGoalChange() {
+    if (!latestRoom) return;
+    socket.emit('room:setMatchGoal', { goal: goalFromControls() });
+  }
+
   function renderRoom(room) {
     latestRoom = room;
     els.roomPanel.classList.remove('hidden');
@@ -58,9 +95,10 @@
       </li>
     `).join('');
     els.startGame.disabled = !isHost || (room.players.filter((player) => player.connected).length < 2 && !debug);
+    syncGoalControls(room, isHost);
     els.startHint.textContent = isHost
       ? (els.startGame.disabled ? 'Waiting for at least 2 connected players.' : 'Ready to start.')
-      : 'Waiting for the host to start.';
+      : `Waiting for the host to start. ${goalLabel(room.matchGoal === undefined ? 100 : room.matchGoal)}.`;
     if (room.phase === 'playing' || room.phase === 'roundResults' || room.phase === 'finished') {
       window.location.href = `/game.html?room=${encodeURIComponent(room.code)}`;
     }
@@ -105,6 +143,12 @@
     PounceUI.toast('Room code copied.');
   });
 
+  els.goalMode.addEventListener('change', () => {
+    els.customGoal.classList.toggle('hidden', els.goalMode.value !== 'custom');
+    els.customGoal.disabled = els.goalMode.value !== 'custom';
+    sendGoalChange();
+  });
+  els.customGoal.addEventListener('change', sendGoalChange);
   els.startGame.addEventListener('click', () => socket.emit('game:start'));
 
   socket.on('connect', () => {

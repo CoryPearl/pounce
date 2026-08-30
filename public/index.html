@@ -26,8 +26,8 @@
 
       <section class="lobby-panel" id="setupPanel">
         <div class="tabs" role="tablist">
-          <button class="tab active" type="button" data-tab="create">Create Game</button>
-          <button class="tab" type="button" data-tab="join">Join Game</button>
+          <button class="tab active" type="button" data-tab="create">Host</button>
+          <button class="tab" type="button" data-tab="join">Join</button>
         </div>
 
         <form class="form active" id="createForm">
@@ -63,6 +63,23 @@
           </div>
           <div class="connection" id="connectionStatus">Connected</div>
           <ul class="player-list" id="playerList"></ul>
+          <div class="match-settings" id="matchSettings">
+            <label>Point Goal
+              <div class="goal-controls">
+                <select id="goalMode" aria-label="Point goal mode">
+                  <option value="100">100 points</option>
+                  <option value="50">50 points</option>
+                  <option value="75">75 points</option>
+                  <option value="150">150 points</option>
+                  <option value="200">200 points</option>
+                  <option value="custom">Custom</option>
+                  <option value="none">No goal</option>
+                </select>
+                <input id="customGoal" type="number" min="10" max="999" step="1" value="100" aria-label="Custom point goal">
+              </div>
+            </label>
+            <p class="hint" id="goalHint">First to 100 points wins.</p>
+          </div>
           <button class="primary full" type="button" id="startGame">Start Game</button>
           <p class="hint" id="startHint">Minimum 2 players. Maximum 4 players.</p>
         </div>

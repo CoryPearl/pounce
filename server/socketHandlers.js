@@ -110,9 +110,31 @@ function registerSocketHandlers(io, roomManager) {
 
     socket.on('room:leave', () => {
       withPlayer(socket, (room, player) => {
-        socket.leave(room.code);
-        roomManager.removePlayer(room, player.id);
+        const roomCode = room.code;
+        const result = roomManager.removePlayer(room, player.id);
+        socket.leave(roomCode);
+        socket.emit('room:left');
+        if (result.closed) {
+          io.to(roomCode).emit('room:closed', {
+            reason: 'The room closed because only one player was left.'
+          });
+          io.in(roomCode).socketsLeave(roomCode);
+          return;
+        }
         emitRoom(room);
+        emitStates(room);
+      });
+    });
+
+    socket.on('room:setMatchGoal', ({ goal } = {}) => {
+      withPlayer(socket, (room, player) => {
+        const result = roomManager.setMatchGoal(room, player.id, goal);
+        if (!result.ok) {
+          socket.emit('room:error', { reason: result.reason });
+          return;
+        }
+        emitRoom(room);
+        emitStates(room);
       });
     });
 
