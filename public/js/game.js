@@ -31,6 +31,7 @@
   let drag = null;
   let latestMyPlayerId = myPlayerId;
   let pendingFoundationPulse = null;
+  let rejoinPromptOpen = false;
 
   function myMarker(card) {
     const owner = publicState && publicState.players.find((player) => player.id === card.ownerPlayerId);
@@ -588,6 +589,8 @@
     localStorage.removeItem('pouncePlayerId');
     localStorage.removeItem('pounceReconnectToken');
     localStorage.removeItem('pounceRoomCode');
+    sessionStorage.removeItem('pounceFreshJoinToken');
+    sessionStorage.removeItem('pounceFreshJoinRoomCode');
   }
 
   function leaveGame() {
@@ -596,6 +599,8 @@
   }
 
   function askToRejoin() {
+    if (rejoinPromptOpen) return;
+    rejoinPromptOpen = true;
     const code = roomCodeFromUrl || storedRoom || 'your room';
     const close = PounceUI.modal('Rejoin Game?', `
       <p class="rules-list">Reconnect to room <strong>${escapeHtml(code)}</strong>?</p>
@@ -605,10 +610,12 @@
       </div>
     `);
     document.getElementById('confirmRejoin').onclick = () => {
+      rejoinPromptOpen = false;
       close();
       socket.emit('room:reconnect', { token });
     };
     document.getElementById('skipRejoin').onclick = () => {
+      rejoinPromptOpen = false;
       close();
       clearLocalSession();
       window.location.href = '/';
@@ -660,7 +667,17 @@
 
   socket.on('connect', () => {
     if (token && (roomCodeFromUrl || storedRoom)) {
-      askToRejoin();
+      const targetRoom = roomCodeFromUrl || storedRoom;
+      const isFreshJoin =
+        sessionStorage.getItem('pounceFreshJoinToken') === token &&
+        sessionStorage.getItem('pounceFreshJoinRoomCode') === targetRoom;
+      if (isFreshJoin) {
+        sessionStorage.removeItem('pounceFreshJoinToken');
+        sessionStorage.removeItem('pounceFreshJoinRoomCode');
+        socket.emit('room:reconnect', { token });
+      } else {
+        askToRejoin();
+      }
     } else {
       window.location.href = '/';
     }

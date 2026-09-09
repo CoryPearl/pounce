@@ -33,6 +33,7 @@
     roomCode: localStorage.getItem('pounceRoomCode')
   };
   let latestRoom = null;
+  let rejoinPromptOpen = false;
 
   function randomName() {
     return names[Math.floor(Math.random() * names.length)];
@@ -43,16 +44,24 @@
     if (me.token) localStorage.setItem('pounceReconnectToken', me.token);
     if (me.playerId) localStorage.setItem('pouncePlayerId', me.playerId);
     if (me.roomCode) localStorage.setItem('pounceRoomCode', me.roomCode);
+    if (me.token && me.roomCode) {
+      sessionStorage.setItem('pounceFreshJoinToken', me.token);
+      sessionStorage.setItem('pounceFreshJoinRoomCode', me.roomCode);
+    }
   }
 
   function clearLocalSession() {
     localStorage.removeItem('pouncePlayerId');
     localStorage.removeItem('pounceReconnectToken');
     localStorage.removeItem('pounceRoomCode');
+    sessionStorage.removeItem('pounceFreshJoinToken');
+    sessionStorage.removeItem('pounceFreshJoinRoomCode');
     me = { playerId: null, token: null, roomCode: null };
   }
 
   function askToRejoin() {
+    if (rejoinPromptOpen) return;
+    rejoinPromptOpen = true;
     const code = me.roomCode || 'your room';
     const close = PounceUI.modal('Rejoin Game?', `
       <p class="rules-list">You were previously in room <strong>${escapeHtml(code)}</strong>.</p>
@@ -62,10 +71,12 @@
       </div>
     `);
     document.getElementById('confirmRejoin').onclick = () => {
+      rejoinPromptOpen = false;
       close();
       socket.emit('room:reconnect', { token: me.token });
     };
     document.getElementById('skipRejoin').onclick = () => {
+      rejoinPromptOpen = false;
       close();
       clearLocalSession();
     };
