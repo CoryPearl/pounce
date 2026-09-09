@@ -1,5 +1,7 @@
 # Pounce
 
+![demo.png](demo.png)
+
 ## About
 
 Pounce is a real-time multiplayer browser card game based on fast competitive solitaire. Two to four players join a shared room, race to empty their Pounce piles, and play into shared center foundations at the same time.
